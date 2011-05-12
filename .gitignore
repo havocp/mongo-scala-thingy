@@ -1,0 +1,8 @@
+/bin/
+/.classpath
+/.project
+/.scala_dependencies
+/project/build/target/
+/target/
+/lib_managed/
+/project/boot/
