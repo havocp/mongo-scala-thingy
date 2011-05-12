@@ -138,7 +138,7 @@ Unlike Salat:
    types in the map. The one exception is support for `Option`; if a
    field is an `Option`, it can be missing from the map. (I do want
    to add safe numeric conversions, like putting Int in Long.)
- - there are no annotations, so you can't rename fields or anything like that
+ - there are no annotations, so you can't ignore fields or anything like that
  - there's no global hash lookup of graters, you would have to build
    that yourself or use the DAO stuff described below.
 
