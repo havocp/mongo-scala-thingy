@@ -68,7 +68,7 @@ Some ideas in the library are:
 ## BSON/JSON tree
 
 This is similar to JValue in lift-json (see
-https://github.com/lift/lift/blob/master/framework/lift-base/lift-json/README.md).
+https://github.com/lift/lift/blob/master/framework/lift-base/lift-json/README.md ).
 
 You can build a BSON object:
 
@@ -141,6 +141,8 @@ Unlike Salat:
  - there are no annotations, so you can't ignore fields or anything like that
  - there's no global hash lookup of graters, you would have to build
    that yourself or use the DAO stuff described below.
+ - without the global hash, case class fields inside case classes can't
+   really work, so you have to resolve "joins" by hand right now
 
 Usage looks like:
 
