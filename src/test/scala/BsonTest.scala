@@ -5,8 +5,8 @@ import com.mongodb.casbah.commons.MongoDBObject
 import org.bson.types.Binary
 import org.bson.types.ObjectId
 import org.bson.types.BSONTimestamp
-import org.joda.time.DateTime
 import java.util.Date
+import org.joda.time.{DateTimeZone, DateTime}
 import org.junit.Assert._
 import org.junit._
 import play.test._
@@ -18,7 +18,9 @@ class BsonTest extends UnitTest {
     }
 
     protected def makeObjectManyTypes() = {
-        val someDate = (new SimpleDateFormat()).parse("07/10/96 4:50 PM, PDT")
+        val someDateTime = new DateTime(1996, 7, 10, 16, 50, 00, 00, DateTimeZone.UTC)
+        val someJavaDate = someDateTime.toDate
+
         BObject("null" -> null,
             "int" -> 42,
             "long" -> 37L,
@@ -28,21 +30,22 @@ class BsonTest extends UnitTest {
             "bigdecimal" -> BigDecimal(23.49),
             "boolean" -> true,
             "string" -> "quick brown fox",
-            "date" -> someDate,
-            "datetime" -> new DateTime(someDate),
-            "timestamp" -> new BSONTimestamp((someDate.getTime() / 1000).toInt, 1),
+            "date" -> someJavaDate,
+            "datetime" -> someDateTime,
+            "timestamp" -> new BSONTimestamp((someJavaDate.getTime / 1000).toInt, 1),
             "objectid" -> new ObjectId("4dbf8ea93364e3bd9745723c"),
             "binary" -> new Binary(BsonSubtype.GENERAL.code, new Array[Byte](10)),
             "bsonobj" -> MongoDBObject("a" -> 30, "b" -> "foo"),
             "map_int" -> Map[String, Int]("a" -> 20, "b" -> 21),
-            "map_date" -> Map[String, Date]("a" -> someDate, "b" -> someDate),
+            "map_date" -> Map[String, Date]("a" -> someJavaDate, "b" -> someJavaDate),
             "seq_string" -> List("a", "b", "c", "d"),
             "seq_int" -> List(1, 2, 3, 4),
             "bobj" -> BObject("foo" -> 6789, "bar" -> 4321))
     }
 
     protected def makeArrayManyTypes() = {
-        val someDate = (new SimpleDateFormat()).parse("07/10/96 4:50 PM, PDT")
+        val someDateTime = new DateTime(1996, 7, 10, 16, 50, 00, 00, DateTimeZone.UTC)
+        val someJavaDate = someDateTime.toDate
         // a non-homogeneous-typed array is pretty much nonsense, but JavaScript
         // lets you do whatever, so we let you do whatever.
         BArray(null,
@@ -54,14 +57,14 @@ class BsonTest extends UnitTest {
             BigDecimal(23.49),
             true,
             "quick brown fox",
-            someDate,
-            new DateTime(someDate),
-            new BSONTimestamp((someDate.getTime() / 1000).toInt, 1),
+            someJavaDate,
+            someDateTime,
+            new BSONTimestamp((someJavaDate.getTime / 1000).toInt, 1),
             new ObjectId("4dbf8ea93364e3bd9745723c"),
             new Binary(BsonSubtype.GENERAL.code, new Array[Byte](10)),
             MongoDBObject("a" -> 30, "b" -> "foo"),
             Map[String, Int]("a" -> 20, "b" -> 21),
-            Map[String, Date]("a" -> someDate, "b" -> someDate),
+            Map[String, Date]("a" -> someJavaDate, "b" -> someJavaDate),
             List("a", "b", "c", "d"),
             List(1, 2, 3, 4),
             BObject("foo" -> 6789, "bar" -> 4321))
@@ -230,9 +233,9 @@ class BsonTest extends UnitTest {
         // FIXME is the base64 encoding really supposed to have \r\n instead of a carriage return newline?
         val expected = "{\"null\":null,\"int\":42,\"long\":37,\"bigint\":42,\"double\":3.14159," +
             "\"float\":3.141590118408203,\"bigdecimal\":23.49,\"boolean\":true,\"string\":\"quick brown fox\"," +
-            "\"date\":837031800000,\"datetime\":837031800000,\"timestamp\":837031800001,\"objectid\":\"4dbf8ea93364e3bd9745723c\"," +
+            "\"date\":837017400000,\"datetime\":837017400000,\"timestamp\":837017400001,\"objectid\":\"4dbf8ea93364e3bd9745723c\"," +
             "\"binary\":\"AAAAAAAAAAAAAA==\\r\\n\",\"bsonobj\":{\"a\":30,\"b\":\"foo\"},\"map_int\":{\"a\":20,\"b\":21}," +
-            "\"map_date\":{\"a\":837031800000,\"b\":837031800000},\"seq_string\":[\"a\",\"b\",\"c\",\"d\"]," +
+            "\"map_date\":{\"a\":837017400000,\"b\":837017400000},\"seq_string\":[\"a\",\"b\",\"c\",\"d\"]," +
             "\"seq_int\":[1,2,3,4],\"bobj\":{\"foo\":6789,\"bar\":4321}}"
         assertEquals(expected, jsonString)
 
@@ -262,7 +265,7 @@ class BsonTest extends UnitTest {
     def barrayToJson() = {
         val barray = makeArrayManyTypes()
         val jsonString = barray.toJson(JsonFlavor.CLEAN)
-        val expected = "[null,42,37,42,3.14159,3.141590118408203,23.49,true,\"quick brown fox\",837031800000,837031800000,837031800001,\"4dbf8ea93364e3bd9745723c\",\"AAAAAAAAAAAAAA==\\r\\n\",{\"a\":30,\"b\":\"foo\"},{\"a\":20,\"b\":21},{\"a\":837031800000,\"b\":837031800000},[\"a\",\"b\",\"c\",\"d\"],[1,2,3,4],{\"foo\":6789,\"bar\":4321}]"
+        val expected = "[null,42,37,42,3.14159,3.141590118408203,23.49,true,\"quick brown fox\",837017400000,837017400000,837017400001,\"4dbf8ea93364e3bd9745723c\",\"AAAAAAAAAAAAAA==\\r\\n\",{\"a\":30,\"b\":\"foo\"},{\"a\":20,\"b\":21},{\"a\":837017400000,\"b\":837017400000},[\"a\",\"b\",\"c\",\"d\"],[1,2,3,4],{\"foo\":6789,\"bar\":4321}]"
         assertEquals(expected, jsonString)
 
         // FIXME test pretty string, test other json flavors
