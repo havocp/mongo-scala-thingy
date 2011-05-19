@@ -18,6 +18,7 @@
 
 package com.ometer.bson
 
+import com.ometer.ClassAnalysis
 import BsonEnums._
 import java.io.Reader
 import scala.math.ScalaNumber
@@ -603,11 +604,6 @@ object BsonAST {
     }
 
     object BValue {
-        // this needs some type of schema
-        def apply(jvalue : JValue, flavor : JsonFlavor) = {
-            // FIXME
-        }
-
         // this is a dynamic (untypesafe) wrap, it's always better to
         // use implicit conversions unless you have an Any with unknown
         // type. basically this is needed for Java interoperability.
@@ -659,6 +655,18 @@ object BsonAST {
                     throw new UnsupportedOperationException("Cannot convert to BValue: " + value)
             }
         }
+
+        def parseJson(json : String, schema : ClassAnalysis[_ <: Product], flavor : JsonFlavor = JsonFlavor.CLEAN) : BValue =
+            BsonValidation.validateAgainstCaseClass(schema, JValue.parseJson(json), flavor)
+
+        def parseJson(json : Reader, schema : ClassAnalysis[_ <: Product]) : BValue =
+            BsonValidation.validateAgainstCaseClass(schema, JValue.parseJson(json), JsonFlavor.CLEAN)
+
+        def parseJson(json : Reader, schema : ClassAnalysis[_ <: Product], flavor : JsonFlavor) : BValue =
+            BsonValidation.validateAgainstCaseClass(schema, JValue.parseJson(json), flavor)
+
+        def fromJValue(jvalue : JValue, schema : ClassAnalysis[_ <: Product], flavor : JsonFlavor = JsonFlavor.CLEAN) : BValue =
+            BsonValidation.validateAgainstCaseClass(schema, jvalue, flavor)
     }
 
     /* Mutable BSONObject/DBObject implementation used to save to MongoDB API */
@@ -718,6 +726,8 @@ object BsonAST {
     }
 
     object JValue {
+        // FIXME maybe "flavor" arg makes no sense here, only when
+        // we're building BSON using a schema
         def parseJson(json : String, flavor : JsonFlavor = JsonFlavor.CLEAN) : JValue =
             BsonJson.fromJson(json, flavor)
 

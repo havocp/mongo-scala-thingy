@@ -1,8 +1,13 @@
 package com.ometer.bson
 
+import com.ometer.ClassAnalysis
 import BsonAST._
 import java.io.Reader
 import net.liftweb.{ json => lift }
+
+abstract class JsonException(message : String, cause : Throwable) extends Exception(message, cause)
+class JsonParseException(message : String, cause : Throwable = null) extends JsonException(message, cause)
+class JsonValidationException(message : String, cause : Throwable = null) extends JsonException(message, cause)
 
 private[bson] object BsonJson {
     private[this] def toLift(value : JValue) : lift.JValue = {
@@ -59,15 +64,32 @@ private[bson] object BsonJson {
         lift.Printer.pretty(lift.render(toLift(value.toJValue(flavor))))
     }
 
+    private def withLiftExceptionsConverted[T](block : => T) : T = {
+        try {
+            block
+        } catch {
+            case e : lift.JsonParser.ParseException =>
+                throw new JsonParseException(e.getMessage(), e)
+        }
+    }
+
+    private def parseString(json : String) : JValue = {
+        withLiftExceptionsConverted(fromLift(lift.parse(json)))
+    }
+
+    private def parseReader(json : Reader) : JValue = {
+        withLiftExceptionsConverted(fromLift(lift.JsonParser.parse(json)))
+    }
+
     def fromJson(json : String, flavor : JsonFlavor = JsonFlavor.CLEAN) : JValue = {
         require(flavor == JsonFlavor.CLEAN) // other flavors not supported for now
-        fromLift(lift.parse(json))
+        parseString(json)
     }
 
     def fromJson(json : Reader) : JValue = fromJson(json, JsonFlavor.CLEAN)
 
     def fromJson(json : Reader, flavor : JsonFlavor) : JValue = {
         require(flavor == JsonFlavor.CLEAN) // other flavors not supported for now
-        fromLift(lift.JsonParser.parse(json))
+        parseReader(json)
     }
 }

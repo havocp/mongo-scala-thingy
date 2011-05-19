@@ -198,6 +198,42 @@ EntityComposer[EntityType, BObject]` that converts between the case
 class and the `BObject`. The idea is that you could do things such as
 rename fields in here, making it an alternative to annotations for that.
 
+## Parsing JSON validated against a case class
+
+To go directly from JSON to BSON (to the `BValue` rather than `JValue`
+type), some form of schema is needed to figure out types; for example,
+to figure out that an `ObjectId`-formatted string is an `ObjectId` and not
+a string.
+
+The natural schema is the case class.
+
+    val analysis = new ClassAnalysis(classOf[ObjectIdAndString])
+    val bson = BValue.parseJson(jsonString, analysis)
+
+This will:
+
+ - validate the JSON (ensuring it has all fields in the case
+class)
+ - convert to BSON types to match the case class (for example,
+a string becomes an ObjectId if the field in the case class is an
+ObjectId)
+ - remove any fields not found in the case class
+
+After parsing the JSON with the case class as schema, building an
+instance of the case class should work (if not, it's a bug, I would
+think):
+
+    val caseClassInstance = analysis.fromMap(bson.unwrapped)
+
+There are several improvements that would be nice here: avoiding the
+"unwrapping" overhead, adding a `BValue.toCaseClass` convenience
+method, adding a convenience method to get a case class directly from
+a JSON string, and adding JSON-parsing methods on the DAO group
+objects that use the `ClassAnalysis` from there. Also, the DAO group
+object could have methods implementing REST PUT and GET i.e. "stick a
+JSON string in MongoDB (with validation)" and "get a JSON string from
+MongoDB," which would then be trivial to wrap in HTTP.
+
 ## Limitations
 
 At the moment this library doesn't do anything related to setting up
