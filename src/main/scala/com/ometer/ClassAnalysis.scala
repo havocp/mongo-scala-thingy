@@ -46,6 +46,13 @@ class ClassAnalysis[X <: ClassAnalysis.CaseClass](val clazz : Class[X]) {
     }
 
     /**
+     * Iterate over whether the fields are optional
+     */
+    def fieldOptionalityIterator : Iterator[Boolean] = {
+        indexedFields.iterator.map(_.optional)
+    }
+
+    /**
      * Iterate over field names and current values for an instance.
      */
     def fieldIterator(o : X) : Iterator[(String, Any)] = {

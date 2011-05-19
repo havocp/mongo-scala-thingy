@@ -23,6 +23,9 @@ package bar {
     case class RecursiveCollections(aMapWithLists : Map[String, List[Int]],
         aListWithMaps : List[Map[String, Int]],
         aListOfListOfList : List[List[List[Int]]])
+
+    case class OptionalFields(anOptionalInt : Option[Int],
+        anOptionalMap : Option[Map[String, Int]])
 }
 
 class ValidationTest extends UnitTest {
@@ -142,5 +145,25 @@ class ValidationTest extends UnitTest {
         assertNotNull("got validation exception", failure)
         assertTrue("proper exception message", failure.getMessage().contains("Expecting"))
         assertTrue("exception message contains field name", failure.getMessage().contains("anInt"))
+    }
+
+    @Test
+    def validateWithOptionalFields() : Unit = {
+        val analysis = new ClassAnalysis(classOf[OptionalFields])
+
+        // all fields are optional so these should work
+        val result = BValue.fromJValue(JObject.empty, analysis)
+        val result2 = BValue.parseJson("{}", analysis)
+
+        // having the fields present should also work
+        val result3 = BValue.fromJValue(JObject("anOptionalInt" -> 47,
+            "anOptionalMap" -> JObject("foo" -> 42)), analysis)
+        assertEquals(result3, BObject("anOptionalInt" -> 47,
+            "anOptionalMap" -> BObject("foo" -> 42)))
+
+        // fields present coming from a JSON string
+        val result4 = BValue.parseJson("""{ "anOptionalInt" : 53, "anOptionalMap" : { "foo" : 23 } }""", analysis)
+        assertEquals(result4, BObject("anOptionalInt" -> 53,
+            "anOptionalMap" -> BObject("foo" -> 23)))
     }
 }

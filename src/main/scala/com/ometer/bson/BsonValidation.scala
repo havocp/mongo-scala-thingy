@@ -118,7 +118,7 @@ private[bson] object BsonValidation {
     private def checkedMap(fieldName : String, valueType : Type, value : JObject) : BObject = {
         val b = BObject.newBuilder
         for ((k, v) <- value) {
-            b += Pair(k, checkedValue(fieldName + "." + k, valueType, Some(v)))
+            b += Pair(k, checkedValue(fieldName + "." + k, valueType, v))
         }
         b.result
     }
@@ -126,20 +126,15 @@ private[bson] object BsonValidation {
     private def checkedList(fieldName : String, elemType : Type, value : JArray) : BArray = {
         val b = BArray.newBuilder
         for ((elem, i) <- value zipWithIndex) {
-            b += checkedValue(fieldName + "[" + i + "]", elemType, Some(elem))
+            b += checkedValue(fieldName + "[" + i + "]", elemType, elem)
         }
         b.result
     }
 
-    private def checkedValue(name : String, t : Type, vOption : Option[JValue]) : BValue = {
-        (vOption, t) match {
-
-            // Missing value
-            case (None, _) =>
-                throw new MissingFieldException(name)
-
+    private def checkedValue(name : String, t : Type, value : JValue) : BValue = {
+        (value, t) match {
             // Map
-            case (Some(v), TypeRefType(_, symbol, TypeRefType(_, kSymbol, _) :: vType :: Nil)) if symbol.path.endsWith(".Map") =>
+            case (v, TypeRefType(_, symbol, TypeRefType(_, kSymbol, _) :: vType :: Nil)) if symbol.path.endsWith(".Map") =>
                 if (kSymbol.path != "scala.Predef.String") {
                     // non-string map key
                     throw new UnhandledTypeException(name, t.toString)
@@ -153,7 +148,7 @@ private[bson] object BsonValidation {
                 }
 
             // List
-            case (Some(v), TypeRefType(_, symbol, elemType :: Nil)) if symbol.path.endsWith(".List") =>
+            case (v, TypeRefType(_, symbol, elemType :: Nil)) if symbol.path.endsWith(".List") =>
                 v match {
                     case j : JArray =>
                         checkedList(name, elemType, j)
@@ -162,7 +157,7 @@ private[bson] object BsonValidation {
                 }
 
             // Non-collection types
-            case (Some(v), TypeRefType(_, symbol, _)) =>
+            case (v, TypeRefType(_, symbol, _)) =>
                 checkedSimpleValue(name, symbol, v)
 
             // Unhandled
@@ -184,10 +179,17 @@ private[bson] object BsonValidation {
         var unhandledTypes = List[String]()
         var fieldExceptions = List[FieldValidationException]()
 
-        for ((name, t) <- analysis.fieldNamesIterator zip analysis.fieldTypesIterator) {
+        for (((name, t), optional) <- analysis.fieldNamesIterator zip analysis.fieldTypesIterator zip analysis.fieldOptionalityIterator) {
             try {
                 val vOption = rootObject.get(name)
-                validated += (name, checkedValue(name, t, vOption))
+                vOption match {
+                    case Some(v) =>
+                        val vType = if (optional) t.asInstanceOf[TypeRefType].typeArgs(0) else t
+                        validated += (name, checkedValue(name, vType, v))
+                    case None =>
+                        if (!optional)
+                            throw new MissingFieldException(name)
+                }
             } catch {
                 case e : BadValueException =>
                     badValues = "%s:%s=%s".format(name, e.expectedType, e.foundValue) :: badValues
