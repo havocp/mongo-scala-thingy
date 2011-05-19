@@ -103,14 +103,14 @@ object BsonAST {
 
         final protected def isPrimitiveNumber(x : Any) = {
             x match {
-                case x: Char    => true
-                case x: Byte    => true
-                case x: Short   => true
-                case x: Int     => true
-                case x: Long    => true
-                case x: Float   => true
-                case x: Double  => true
-                case _          => false
+                case x : Char => true
+                case x : Byte => true
+                case x : Short => true
+                case x : Int => true
+                case x : Long => true
+                case x : Float => true
+                case x : Double => true
+                case _ => false
             }
         }
 
@@ -135,7 +135,7 @@ object BsonAST {
         override def isWhole = (value % 1) == 0
         override def doubleValue = value
 
-        override def hashCode(): Int = if (isWhole) unifiedPrimitiveHashcode else value.##
+        override def hashCode() : Int = if (isWhole) unifiedPrimitiveHashcode else value.##
         override def equals(that : Any) : Boolean = unifiedBNumericEquals(that)
     }
 
@@ -143,7 +143,7 @@ object BsonAST {
         override def isWhole = true
         override def intValue = value
 
-        override def hashCode(): Int = unifiedPrimitiveHashcode
+        override def hashCode() : Int = unifiedPrimitiveHashcode
         override def equals(that : Any) : Boolean = unifiedBNumericEquals(that)
     }
 
@@ -151,7 +151,7 @@ object BsonAST {
         override def isWhole = true
         override def longValue = value
 
-        override def hashCode(): Int = unifiedPrimitiveHashcode
+        override def hashCode() : Int = unifiedPrimitiveHashcode
         override def equals(that : Any) : Boolean = unifiedBNumericEquals(that)
     }
 
@@ -175,16 +175,16 @@ object BsonAST {
     }
 
     private[bson] def newArrayBuilder[V <: BValue, A <: ArrayBase[V] : Manifest](fromList : List[V] => A) : Builder[V, A] = {
-            new Builder[V, A] {
-                val buffer = new ListBuffer[V]
-                override def clear : Unit = buffer.clear
-                override def result = fromList(buffer.result)
-                override def +=(elem : V) = {
-                    buffer += elem
-                    this
-                }
+        new Builder[V, A] {
+            val buffer = new ListBuffer[V]
+            override def clear : Unit = buffer.clear
+            override def result = fromList(buffer.result)
+            override def +=(elem : V) = {
+                buffer += elem
+                this
             }
         }
+    }
 
     case class BArray(override val value : List[BValue])
         extends ArrayBase[BValue]
@@ -214,8 +214,8 @@ object BsonAST {
 
         def apply(v1 : BValue, v2 : BValue, vs : BValue*) : BArray = {
             BArray((if (v1 == null) BNull else v1) ::
-                   (if (v2 == null) BNull else v2) ::
-                   vs.map({ v => if (v == null) BNull else v }).toList)
+                (if (v2 == null) BNull else v2) ::
+                vs.map({ v => if (v == null) BNull else v }).toList)
         }
 
         def newBuilder : Builder[BValue, BArray] = newArrayBuilder(list => BArray(list))
@@ -258,8 +258,8 @@ object BsonAST {
 
         def apply(v1 : JValue, v2 : JValue, vs : JValue*) : JArray = {
             JArray((if (v1 == null) BNull else v1) ::
-                   (if (v2 == null) BNull else v2) ::
-                   vs.map({ v => if (v == null) BNull else v }).toList)
+                (if (v2 == null) BNull else v2) ::
+                vs.map({ v => if (v == null) BNull else v }).toList)
         }
 
         def newBuilder : Builder[JValue, JArray] = newArrayBuilder(list => JArray(list))
@@ -283,7 +283,7 @@ object BsonAST {
                     BString(Base64.encodeBase64String(value))
                 case JsonFlavor.STRICT =>
                     JObject(List(("$binary", BString(Base64.encodeBase64String(value))),
-                            ("$type", BString(String.format("%02x", new java.lang.Integer(subtype.code & 0xff))))))
+                        ("$type", BString(String.format("%02x", new java.lang.Integer(subtype.code & 0xff))))))
                 case _ =>
                     throw new UnsupportedOperationException("Don't yet support JsonFlavor " + flavor)
             }
@@ -349,7 +349,7 @@ object BsonAST {
     private type BField = Field[BValue]
     private type JField = Field[JValue]
 
-    abstract trait ObjectBase[ValueType <: BValue, Repr <: Map[String,ValueType]]
+    abstract trait ObjectBase[ValueType <: BValue, Repr <: Map[String, ValueType]]
         extends BValue
         with immutable.Map[String, ValueType] {
         type WrappedType = Map[String, Any]
