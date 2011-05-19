@@ -283,10 +283,51 @@ object BsonAST {
                     BString(Base64.encodeBase64String(value))
                 case JsonFlavor.STRICT =>
                     JObject(List(("$binary", BString(Base64.encodeBase64String(value))),
-                        ("$type", BString(String.format("%02x", new java.lang.Integer(subtype.code & 0xff))))))
+                        ("$type", BString("%02x".format("%02x", (subtype.code : Int) & 0xff)))))
                 case _ =>
                     throw new UnsupportedOperationException("Don't yet support JsonFlavor " + flavor)
             }
+        }
+
+        // We have to fix equals() because default doesn't implement it
+        // correctly (does not consider the contents of the byte[])
+        override def equals(other : Any) : Boolean = {
+            other match {
+                case that : BBinData =>
+                    (that canEqual this) &&
+                        (subtype == that.subtype) &&
+                        (value.length == that.value.length) &&
+                        (value sameElements that.value)
+                case _ => false
+            }
+        }
+
+        // have to make hashCode match equals (array hashCode doesn't
+        // look at elements, Seq hashCode does
+        override def hashCode() : Int = {
+            41 * (41 + subtype.hashCode) + (value : Seq[Byte]).hashCode
+        }
+
+        private def bytesAsString(sb : StringBuilder, i : Traversable[Byte]) = {
+            for (b <- i) {
+                sb.append("%02x".format((b : Int) & 0xff))
+            }
+        }
+
+        // default toString just shows byte[] object id
+        override def toString() : String = {
+            val sb = new StringBuilder
+            sb.append("BBinData(")
+            val bytes = value.take(10)
+            bytesAsString(sb, bytes)
+            if (value.length > 10)
+                sb.append("...")
+            sb.append("@")
+            sb.append(value.length.toString)
+            sb.append(",")
+            sb.append(subtype.toString)
+            sb.append(")")
+            sb.toString
         }
     }
 

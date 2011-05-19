@@ -522,4 +522,26 @@ class BsonTest extends UnitTest {
         val withBValue = arr1 ++ List(BInt32(42))
         assertEquals(classOf[BArray].getName, withBValue.getClass.getName)
     }
+
+    @Test
+    def binDataEqualsWorks() : Unit = {
+        val a1 = BBinData(Array[Byte](0, 1, 2, 3, 4, 127, -127, -1), BsonSubtype.GENERAL)
+        val a2 = BBinData(Array[Byte](0, 1, 2, 3, 4, 127, -127, -1), BsonSubtype.GENERAL)
+        val subDiffers = BBinData(Array[Byte](0, 1, 2, 3, 4, 127, -127, -1), BsonSubtype.UUID)
+        val dataDiffers = BBinData(Array[Byte](2, 2, 1, 0, 1, 127, -127, -1), BsonSubtype.GENERAL)
+        assertEquals("two identical BBinData are equal", a1, a2)
+        assertFalse("BBinData with different subtype not equal", a1 == subDiffers)
+        assertFalse("BBinData with different data not equal", a1 == dataDiffers)
+        assertEquals("two identical BBinData have same hashCode", a1.hashCode, a2.hashCode)
+        assertFalse("BBinData with different subtype have different hashCode", a1.hashCode == subDiffers.hashCode)
+        assertFalse("BBinData with different data have different hashCode", a1.hashCode == dataDiffers.hashCode)
+    }
+
+    @Test
+    def binDataToStringWorks() : Unit = {
+        val short = BBinData(Array[Byte](0, 1, 2, 3, 4, 127, -127, -1), BsonSubtype.GENERAL)
+        val longer = BBinData(Array[Byte](0, 1, 2, 3, 4, 127, -127, -1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15), BsonSubtype.GENERAL)
+        assertEquals("BBinData(00010203047f81ff@8,GENERAL)", short.toString)
+        assertEquals("BBinData(00010203047f81ff0506...@19,GENERAL)", longer.toString)
+    }
 }
