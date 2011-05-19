@@ -61,10 +61,10 @@ class ClassAnalysis[X <: ClassAnalysis.CaseClass](val clazz : Class[X]) {
     def asMap(o : X) : Map[String, Any] = {
         val builder = Map.newBuilder[String, Any]
 
-        for ( (name, value) <- fieldIterator(o) ) {
+        for ((name, value) <- fieldIterator(o)) {
             value match {
                 case None =>
-                    // Option-valued field is not present, omit
+                // Option-valued field is not present, omit
                 case Some(x) =>
                     // Option-valued field is present, include
                     builder += name -> x
@@ -267,7 +267,7 @@ object ClassAnalysis {
         annotation[A](x)(manifest[A]).isDefined
     }
 
-    private def extractSingleTypeArg(t: Type, typeName: String): Option[Type] = {
+    private def extractSingleTypeArg(t : Type, typeName : String) : Option[Type] = {
         t match {
             case TypeRefType(_, symbol, Seq(typeArg)) if symbol.path == typeName =>
                 Some(typeArg)
