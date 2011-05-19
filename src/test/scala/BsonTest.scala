@@ -6,7 +6,7 @@ import org.bson.types.Binary
 import org.bson.types.ObjectId
 import org.bson.types.BSONTimestamp
 import java.util.Date
-import org.joda.time.{DateTimeZone, DateTime}
+import org.joda.time.{ DateTimeZone, DateTime }
 import org.junit.Assert._
 import org.junit._
 import play.test._
