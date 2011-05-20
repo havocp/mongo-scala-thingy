@@ -72,5 +72,50 @@ class JsonMethodsTest extends UnitTest {
         assertEquals(23, bobjectModified2.get("anInt").get.unwrapped)
     }
 
-    // FIXME test delete and listing all objects, at least
+    @Test
+    def deleteWorks() : Unit = {
+        // create an object
+        val createdJson = Foo.createJson("""{ "aString" : "hello", "anInt" : 76 }""")
+        // parse what we created
+        val bobjectCreated = Foo.parseJson(createdJson)
+        assertEquals("hello", bobjectCreated.get("aString").get.unwrapped)
+        assertEquals(76, bobjectCreated.get("anInt").get.unwrapped)
+        val createdIdString = bobjectCreated.get("_id").get.unwrapped.toString
+
+        // get the object
+        val gotJsonOption = Foo.readJson(Some(createdIdString))
+        assertTrue(gotJsonOption.isDefined)
+        // parse what we got
+        val bobjectGot = Foo.parseJson(gotJsonOption.get)
+        assertEquals(createdIdString, bobjectGot.get("_id").get.unwrapped.toString)
+        assertEquals(bobjectCreated, bobjectGot)
+        assertEquals("hello", bobjectGot.get("aString").get.unwrapped)
+        assertEquals(76, bobjectGot.get("anInt").get.unwrapped)
+
+        // delete the object
+        Foo.deleteJson(createdIdString)
+
+        // fail to get the object
+        val gotAfterDeleteJsonOption = Foo.readJson(Some(createdIdString))
+        assertFalse("object is gone", gotAfterDeleteJsonOption.isDefined)
+    }
+
+    @Test
+    def readAllObjectsWorks() : Unit = {
+        // create some objects
+        Foo.createJson("""{ "aString" : "hello", "anInt" : 76 }""")
+        Foo.createJson("""{ "aString" : "hello2", "anInt" : 77 }""")
+        Foo.createJson("""{ "aString" : "hello3", "anInt" : 78 }""")
+
+        // read all
+        val allJsonOption = Foo.readJson(None)
+        assertTrue(allJsonOption.isDefined)
+        val objects = Foo.parseJsonArray(allJsonOption.get)
+        assertEquals(3, objects.size)
+        val strings = objects.map(_ match {
+            case obj : BObject => obj.get("aString").get.unwrapped.asInstanceOf[String]
+            case _ => throw new Exception("not an object")
+        })
+        assertEquals(List("hello", "hello2", "hello3"), strings.sorted.toList)
+    }
 }
