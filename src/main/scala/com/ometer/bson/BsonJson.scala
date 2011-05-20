@@ -5,7 +5,7 @@ import BsonAST._
 import java.io.Reader
 import net.liftweb.{ json => lift }
 
-abstract class JsonException(message : String, cause : Throwable) extends Exception(message, cause)
+abstract class JsonException(message : String, cause : Throwable = null) extends Exception(message, cause)
 class JsonParseException(message : String, cause : Throwable = null) extends JsonException(message, cause)
 class JsonValidationException(message : String, cause : Throwable = null) extends JsonException(message, cause)
 
