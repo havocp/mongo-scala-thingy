@@ -226,8 +226,8 @@ trait JsonMethods[SchemaType <: Product] {
         jsonDAO.remove(createQueryForObject(path))
     }
 
-    private def parseJson(path : Option[String], json : String) : BObject = {
-        val jobject : JObject = modifyIncomingJson(path, JValue.parseJson(json))
+    private def fromJValue(path : Option[String], jvalue : JValue) : BObject = {
+        val jobject : JObject = modifyIncomingJson(path, jvalue)
         BValue.fromJValue(jobject, jsonAnalysis, jsonFlavor) match {
             case bobject : BObject =>
                 modifyIncomingBson(bobject)
@@ -236,11 +236,34 @@ trait JsonMethods[SchemaType <: Product] {
         }
     }
 
+    private def parseJson(path : Option[String], json : String) : BObject = {
+        fromJValue(path, JValue.parseJson(json))
+    }
+
     /**
-     * Parses JSON against the schema, calling modify hooks in the same way as putJson(), i.e.
+     * Parses JSON against the schema, calling modify hooks in the same way as createJson(), i.e.
      * the parsed JSON ends up as it would normally be stored in MongoDB.
      */
     def parseJson(json : String) : BObject = {
         parseJson(None, json)
+    }
+
+    /**
+     * Parses JSON containing an array of objects, validating each one against the
+     * schema. The parsed objects end up as they would normally be stored in MongoDB
+     * by createJson() or updateJson()
+     */
+    def parseJsonArray(json : String) : BArray = {
+        val jvalue = JValue.parseJson(json)
+        jvalue match {
+            case jarray : JArray =>
+                val b = BArray.newBuilder
+                for (o <- jarray) {
+                    b += fromJValue(None, o)
+                }
+                b.result
+            case wtf =>
+                throw new JsonValidationException("JSON must be an array of objects \"[...]\" not " + wtf.getClass.getName)
+        }
     }
 }
