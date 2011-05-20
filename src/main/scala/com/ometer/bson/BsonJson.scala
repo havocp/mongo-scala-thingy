@@ -81,15 +81,7 @@ private[bson] object BsonJson {
         withLiftExceptionsConverted(fromLift(lift.JsonParser.parse(json)))
     }
 
-    def fromJson(json : String, flavor : JsonFlavor = JsonFlavor.CLEAN) : JValue = {
-        require(flavor == JsonFlavor.CLEAN) // other flavors not supported for now
-        parseString(json)
-    }
+    def fromJson(json : String) : JValue = parseString(json)
 
-    def fromJson(json : Reader) : JValue = fromJson(json, JsonFlavor.CLEAN)
-
-    def fromJson(json : Reader, flavor : JsonFlavor) : JValue = {
-        require(flavor == JsonFlavor.CLEAN) // other flavors not supported for now
-        parseReader(json)
-    }
+    def fromJson(json : Reader) : JValue = parseReader(json)
 }

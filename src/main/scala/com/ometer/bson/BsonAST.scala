@@ -726,14 +726,8 @@ object BsonAST {
     }
 
     object JValue {
-        // FIXME maybe "flavor" arg makes no sense here, only when
-        // we're building BSON using a schema
-        def parseJson(json : String, flavor : JsonFlavor = JsonFlavor.CLEAN) : JValue =
-            BsonJson.fromJson(json, flavor)
+        def parseJson(json : String) : JValue = BsonJson.fromJson(json)
 
-        def parseJson(json : Reader) : JValue = BsonJson.fromJson(json, JsonFlavor.CLEAN)
-
-        def parseJson(json : Reader, flavor : JsonFlavor) : JValue =
-            BsonJson.fromJson(json, flavor)
+        def parseJson(json : Reader) : JValue = BsonJson.fromJson(json)
     }
 }
