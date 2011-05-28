@@ -47,8 +47,9 @@ Some ideas in the library are:
    parameters for the query, entity, and id types.
  - typically you would use a pipeline of DAO objects, where the DAO
    that gives you back case classes builds on the DAO that gives
-   you back `BObject`. See DAOGroup.scala for a base class that
-   gives you the DAO pipeline.
+   you back `BObject`. See CollectionOperations.scala for a trait that
+   gives you the DAO pipeline. (CasbahCollectionOperations extends
+   the trait with more concrete implementation.)
  - you can then choose to query for either a raw BSON tree or
    the case class, and write generic queries that support both.
  - you can override and customize the BSON-to-case-class conversion.
@@ -64,6 +65,8 @@ Some ideas in the library are:
  - currently JSON parsing and generation are done with lift-json but
    it may be nicer to drop this dependency sometime. The dependency
    isn't in the API.
+ - make it simple to code backbone.js-style REST CRUD methods on
+   a MongoDB collection
 
 ## BSON/JSON tree
 
@@ -163,13 +166,14 @@ trait that defines an interface with `find()`, `insert()`, `remove()`, etc.:
 There are subtypes of the trait for `BObject` and case class entity
 types.
 
-Then there's a concept of DAO group, which sets up both a `BObject` and a
-case class access object. You might use it like this:
+Then there's a `CollectionOperations` trait, with some subclasses that
+connect to Casbah. This trait sets up both a `BObject` and a case
+class DAO. You might use it like this:
 
     package foo {
         case class Foo(_id : ObjectId, intField : Int, stringField : String)
 
-        object Foo extends DefaultCaseClassBObjectCasbahDAOGroup[Foo] {
+        object Foo extends CasbahCollectionOperationsWithObjectId[Foo] {
             override protected lazy val collection : MongoCollection = {
                 MongoUtil.collection("foo")
             }
@@ -191,12 +195,13 @@ you're doing. You probably want a `BObject` in order to dump some JSON
 out over HTTP, but a case class if you're going to write some code in
 Scala to manipulate the object.
 
-If you wanted to change the mapping from the `BObject` layer to the case
-class layer, you can override the "composers" included in the DAO
-group. For example, there's a field `caseClassBObjectEntityComposer :
-EntityComposer[EntityType, BObject]` that converts between the case
-class and the `BObject`. The idea is that you could do things such as
-rename fields in here, making it an alternative to annotations for that.
+If you wanted to change the mapping from the `BObject` layer to the
+case class layer, you can override the "composers" included in the
+`CasbahCollectionOperations`. For example, there's a field
+`caseClassBObjectEntityComposer : EntityComposer[EntityType, BObject]`
+that converts between the case class and the `BObject`. The idea is
+that you could do things such as rename fields in here, making it an
+alternative to annotations for that.
 
 ## Parsing JSON validated against a case class
 
@@ -227,12 +232,21 @@ think):
 
 There are several improvements that would be nice here: avoiding the
 "unwrapping" overhead, adding a `BValue.toCaseClass` convenience
-method, adding a convenience method to get a case class directly from
-a JSON string, and adding JSON-parsing methods on the DAO group
-objects that use the `ClassAnalysis` from there. Also, the DAO group
-object could have methods implementing REST PUT and GET i.e. "stick a
-JSON string in MongoDB (with validation)" and "get a JSON string from
-MongoDB," which would then be trivial to wrap in HTTP.
+method.
+
+## Auto-implementing REST-style CRUD operations with JSON
+
+There's a trait called `JsonMethods` which implements a "backend" that
+corresponds to backbone.js-style CRUD operations on a MongoDB
+collection.
+
+To be clear, this library does not contain any HTTP code; you'd have
+to write some trivial glue between HTTP in your web stack of choice,
+and the `JsonMethods` trait.
+
+The methods in `JsonMethods` generally take the trailing part of the
+URL (which would be the object ID) and then take and/or return a JSON
+string representing the object.
 
 ## Limitations
 
