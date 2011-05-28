@@ -3,7 +3,7 @@ import com.ometer.bson._
 import com.ometer.bson.Implicits._
 import com.ometer.mongo.CaseClassSyncDAO
 import com.ometer.mongo.BObjectSyncDAO
-import com.ometer.casbah.DefaultCaseClassBObjectCasbahDAOGroup
+import com.ometer.casbah._
 import com.mongodb.casbah.Imports._
 import com.mongodb.casbah.commons.conversions.scala._
 import org.joda.time.DateTime
@@ -29,7 +29,9 @@ object MongoUtil {
         if (name == null)
             throw new IllegalArgumentException("null collection name")
         val db : MongoDB = connection(dbname)
+        assert(db != null)
         val coll : MongoCollection = db(name)
+        assert(coll != null)
         coll
     }
 }

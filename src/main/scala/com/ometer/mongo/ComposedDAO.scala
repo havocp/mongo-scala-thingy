@@ -2,43 +2,11 @@ package com.ometer.mongo
 
 import com.mongodb.WriteResult
 
-abstract trait QueryComposer[OuterQueryType, InnerQueryType] {
-    def queryIn(q : OuterQueryType) : InnerQueryType
-    def queryOut(q : InnerQueryType) : OuterQueryType
-}
-
-class IdentityQueryComposer[QueryType]
-    extends QueryComposer[QueryType, QueryType] {
-    override def queryIn(q : QueryType) = q
-    override def queryOut(q : QueryType) = q
-}
-
-abstract trait EntityComposer[OuterEntityType, InnerEntityType] {
-    def entityIn(o : OuterEntityType) : InnerEntityType
-    def entityOut(o : InnerEntityType) : OuterEntityType
-}
-
-class IdentityEntityComposer[EntityType]
-    extends EntityComposer[EntityType, EntityType] {
-    override def entityIn(o : EntityType) = o
-    override def entityOut(o : EntityType) = o
-}
-
-abstract trait IdComposer[OuterIdType, InnerIdType] {
-    def idIn(id : OuterIdType) : InnerIdType
-    def idOut(id : InnerIdType) : OuterIdType
-}
-
-class IdentityIdComposer[IdType]
-    extends IdComposer[IdType, IdType] {
-    override def idIn(id : IdType) = id
-    override def idOut(id : IdType) = id
-}
-
 /**
  * A DAO that backends to another DAO. The two may have different query, entity, and ID types.
+ * This is an internal implementation class not exported from the library.
  */
-abstract trait ComposedSyncDAO[OuterQueryType, OuterEntityType, OuterIdType, InnerQueryType, InnerEntityType, InnerIdType]
+private[ometer] abstract trait ComposedSyncDAO[OuterQueryType, OuterEntityType, OuterIdType, InnerQueryType, InnerEntityType, InnerIdType]
     extends SyncDAO[OuterQueryType, OuterEntityType, OuterIdType] {
 
     protected val backend : SyncDAO[InnerQueryType, InnerEntityType, InnerIdType]

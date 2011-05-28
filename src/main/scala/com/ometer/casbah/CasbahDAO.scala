@@ -7,21 +7,10 @@ import com.mongodb.casbah.MongoCollection
 import com.mongodb.CommandResult
 import com.mongodb.DBObject
 
-/* adds DBObject extensions to BSONObject */
-class BObjectDBObject(b : BObject) extends BObjectBSONObject(b) with DBObject {
-    private[this] var isPartial : Boolean = false
-
-    def this() = {
-        this(BObject.empty)
-    }
-
-    override def isPartialObject() : Boolean = isPartial
-
-    override def markAsPartialObject() : Unit = {
-        isPartial = true
-    }
-}
-
+/**
+ * Base trait that chains SyncDAO methods to a Casbah collection, which must be provided
+ * by a subclass of this trait.
+ */
 abstract trait CasbahSyncDAO[IdType <: Any] extends SyncDAO[DBObject, DBObject, IdType] {
     protected def collection : MongoCollection
 
@@ -58,12 +47,30 @@ abstract trait CasbahSyncDAO[IdType <: Any] extends SyncDAO[DBObject, DBObject, 
     }
 }
 
-class BObjectCasbahQueryComposer extends QueryComposer[BObject, DBObject] {
+/**
+ * adds DBObject extensions to BSONObject.
+ * This is an internal implementation class not exported by the library.
+ */
+private[casbah] class BObjectDBObject(b : BObject) extends BObjectBSONObject(b) with DBObject {
+    private[this] var isPartial : Boolean = false
+
+    def this() = {
+        this(BObject.empty)
+    }
+
+    override def isPartialObject() : Boolean = isPartial
+
+    override def markAsPartialObject() : Unit = {
+        isPartial = true
+    }
+}
+
+private[casbah] class BObjectCasbahQueryComposer extends QueryComposer[BObject, DBObject] {
     override def queryIn(q : BObject) : DBObject = new BObjectDBObject(q)
     override def queryOut(q : DBObject) : BObject = BObject(q)
 }
 
-class BObjectCasbahEntityComposer extends EntityComposer[BObject, DBObject] {
+private[casbah] class BObjectCasbahEntityComposer extends EntityComposer[BObject, DBObject] {
     override def entityIn(o : BObject) : DBObject = new BObjectDBObject(o)
     override def entityOut(o : DBObject) : BObject = BObject(o)
 }
@@ -72,7 +79,7 @@ class BObjectCasbahEntityComposer extends EntityComposer[BObject, DBObject] {
  * A BObject DAO that specifically backends to a Casbah DAO.
  * Subclass would provide the backend and could override the in/out type converters.
  */
-abstract trait BObjectCasbahSyncDAO[OuterIdType, InnerIdType]
+private[casbah] abstract trait BObjectCasbahSyncDAO[OuterIdType, InnerIdType]
     extends BObjectComposedSyncDAO[OuterIdType, DBObject, DBObject, InnerIdType] {
     override protected val backend : CasbahSyncDAO[InnerIdType]
 

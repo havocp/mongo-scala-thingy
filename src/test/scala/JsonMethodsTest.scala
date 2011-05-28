@@ -1,7 +1,7 @@
 import com.mongodb.casbah.commons.MongoDBObject
 import com.ometer.bson.Implicits._
 import com.ometer.bson._
-import com.ometer.casbah.DefaultCaseClassBObjectCasbahDAOGroup
+import com.ometer.casbah._
 import com.ometer.mongo.JsonMethods
 import com.ometer.ClassAnalysis
 import org.bson.types._
@@ -13,7 +13,7 @@ package restdemo {
     case class Foo(_id : ObjectId, aString : String, anInt : Int)
 
     object Foo
-        extends DefaultCaseClassBObjectCasbahDAOGroup[Foo]
+        extends CasbahCollectionOperationsWithDefaultId[Foo]
         with JsonMethods[Foo] {
         override lazy val collection = MongoUtil.collection("restdemofoo")
         override val jsonAnalysis = new ClassAnalysis(classOf[Foo])

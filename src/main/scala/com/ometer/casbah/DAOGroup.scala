@@ -20,15 +20,21 @@ import org.bson.types.ObjectId
  * "composer" objects and do things like validation or dealing with legacy
  * object formats in there.
  */
-abstract class CaseClassBObjectCasbahDAOGroup[EntityType <: Product : Manifest, CaseClassIdType, BObjectIdType] {
+private[casbah] class CaseClassBObjectCasbahDAOGroup[EntityType <: Product : Manifest, CaseClassIdType, BObjectIdType](
+    val collection : MongoCollection,
+    val caseClassBObjectQueryComposer : QueryComposer[BObject, BObject],
+    val caseClassBObjectEntityComposer : EntityComposer[EntityType, BObject],
+    val caseClassBObjectIdComposer : IdComposer[CaseClassIdType, BObjectIdType]) {
+    require(collection != null)
+    require(caseClassBObjectQueryComposer != null)
+    require(caseClassBObjectEntityComposer != null)
+    require(caseClassBObjectIdComposer != null)
+
     /* this is not a type parameter because we don't want people to transform ID
      * type between BObject and Casbah; transformations should be done on
      * the case-class-to-bobject layer because we want to keep that layer.
      */
     final private type CasbahIdType = BObjectIdType
-
-    /** Implement this field in subclass to attach the DAOGroup to a collection */
-    protected val collection : MongoCollection
 
     /* Let's not allow changing the BObject-to-Casbah mapping since we want to
      * get rid of Casbah's DBObject. That's why these are private.
@@ -39,30 +45,6 @@ abstract class CaseClassBObjectCasbahDAOGroup[EntityType <: Product : Manifest, 
         new BObjectCasbahEntityComposer()
     private lazy val bobjectCasbahIdComposer : IdComposer[BObjectIdType, CasbahIdType] =
         new IdentityIdComposer()
-
-    /**
-     * There probably isn't a reason to override this, but it would modify a query
-     * as it went from the case class DAO to the BObject DAO.
-     */
-    protected lazy val caseClassBObjectQueryComposer : QueryComposer[BObject, BObject] =
-        new IdentityQueryComposer()
-
-    /**
-     * You would override this if you want to adjust how a BObject is mapped to a
-     * case class entity. For example if you need to deal with missing fields or
-     * database format changes, you could do that in this composer. Or if you
-     * wanted to do a type mapping, say from Int to an enumeration, you could do that
-     * here. Many things you might do with an annotation in something like JPA
-     * could instead be done by subclassing CaseClassBObjectEntityComposer, in theory.
-     */
-    protected lazy val caseClassBObjectEntityComposer : EntityComposer[EntityType, BObject] =
-        new CaseClassBObjectEntityComposer[EntityType]()
-
-    /**
-     * You would have to override this if your ID type changes between the case class
-     * and BObject layers.
-     */
-    protected val caseClassBObjectIdComposer : IdComposer[CaseClassIdType, BObjectIdType]
 
     /**
      *  This is the "raw" Casbah DAO, if you need to work with a DBObject for some reason.
@@ -106,58 +88,4 @@ abstract class CaseClassBObjectCasbahDAOGroup[EntityType <: Product : Manifest, 
             override val idComposer = caseClassBObjectIdComposer
         }
     }
-}
-
-/**
- * A case-class-on-bobject-on-casbah DAO group with no identity transformations, using ObjectId for ids.
- */
-abstract class DefaultCaseClassBObjectCasbahDAOGroup[EntityType <: Product : Manifest]
-    extends CaseClassBObjectCasbahDAOGroup[EntityType, ObjectId, ObjectId] {
-    override val caseClassBObjectIdComposer : IdComposer[ObjectId, ObjectId] = new IdentityIdComposer()
-
-    /**
-     * This lets you write a function that generically works for either the case class or
-     * BObject results.
-     */
-    def syncDAO[E : Manifest] : SyncDAO[BObject, E, ObjectId] = {
-        manifest[E] match {
-            case m if m == manifest[BObject] =>
-                bobjectSyncDAO.asInstanceOf[SyncDAO[BObject, E, ObjectId]]
-            case m if m == manifest[EntityType] =>
-                caseClassSyncDAO.asInstanceOf[SyncDAO[BObject, E, ObjectId]]
-            case _ =>
-                throw new IllegalArgumentException("Missing type param on syncDAO[T]? add the [T]? No DAO returns type: " + manifest[E])
-        }
-    }
-}
-
-/**
- * A DAO group that adds yet another layer, an "application object" that need not be
- * a case class. You have to manually implement conversions of this object to/from
- * the case class.
- */
-abstract class AppObjectDAOGroup[AppObjectType, CaseEntityType <: Product : Manifest, CaseClassIdType, BObjectIdType]
-    extends CaseClassBObjectCasbahDAOGroup[CaseEntityType, CaseClassIdType, BObjectIdType] {
-
-    // we don't allow overriding this for now
-    final private type AppObjectIdType = CaseClassIdType
-
-    protected val appObjectCaseClassEntityComposer : EntityComposer[AppObjectType, CaseEntityType]
-
-    lazy val appObjectSyncDAO : SyncDAO[BObject, AppObjectType, CaseClassIdType] = {
-        new ComposedSyncDAO[BObject, AppObjectType, AppObjectIdType, BObject, CaseEntityType, CaseClassIdType] {
-            override val backend = caseClassSyncDAO
-            override val queryComposer = new IdentityQueryComposer[BObject]
-            override val entityComposer = appObjectCaseClassEntityComposer
-            override val idComposer = new IdentityIdComposer[AppObjectIdType]
-        }
-    }
-}
-
-/**
- * An app object DAO group with no identity transformations, using ObjectId for ids.
- */
-abstract class DefaultAppObjectDAOGroup[AppObjectType, CaseEntityType <: Product : Manifest]
-    extends AppObjectDAOGroup[AppObjectType, CaseEntityType, ObjectId, ObjectId] {
-    override val caseClassBObjectIdComposer : IdComposer[ObjectId, ObjectId] = new IdentityIdComposer()
 }

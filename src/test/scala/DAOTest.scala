@@ -2,7 +2,7 @@ import com.mongodb.casbah.commons.MongoDBObject
 import com.mongodb.casbah.MongoCollection
 import com.ometer.bson.Implicits._
 import com.ometer.bson._
-import com.ometer.casbah.DefaultCaseClassBObjectCasbahDAOGroup
+import com.ometer.casbah._
 import org.bson.types._
 import org.junit.Assert._
 import org.junit._
@@ -11,7 +11,7 @@ import play.test._
 package foo {
     case class Foo(_id : ObjectId, intField : Int, stringField : String)
 
-    object Foo extends DefaultCaseClassBObjectCasbahDAOGroup[Foo] {
+    object Foo extends CasbahCollectionOperationsWithDefaultId[Foo] {
         override protected lazy val collection : MongoCollection = {
             MongoUtil.collection("foo")
         }
