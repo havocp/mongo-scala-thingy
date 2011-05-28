@@ -36,7 +36,7 @@ abstract class CasbahCollectionOperations[EntityType <: Product : Manifest, Case
     protected val caseClassBObjectIdComposer : IdComposer[CaseClassIdType, BObjectIdType]
 
     /* If this isn't lazy, then caseClassBObjectIdComposer is null, I guess because
-     * the superclass is initialized prior to the base class.
+     * the superclass is initialized prior to the subclass.
      */
     private lazy val daoGroup =
         new CaseClassBObjectCasbahDAOGroup[EntityType, CaseClassIdType, BObjectIdType](collection,
