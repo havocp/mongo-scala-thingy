@@ -47,7 +47,9 @@ trait JsonMethods[SchemaType <: Product] {
      * used in the HTTP request.
      *
      * By default it assumes the path segment is an ObjectId
-     * stored in the "_id" field.
+     * stored in the "_id" field. (In the future, the default
+     * may be smart and look at the type of the _id field
+     * in the schema case class.)
      *
      * To change that, override here.
      */
@@ -66,14 +68,32 @@ trait JsonMethods[SchemaType <: Product] {
      */
     protected def createQueryForAllObjects() : BObject
 
-    // verify an object ID and return it unmodified, throwing if it's invalid
-    private def verifiedObjectId(id : String) : String = {
+    /**
+     * This function should convert a trailing path component to the JValue representation
+     * of the object ID, or throw a JsonValidationException if the path is not a well-formed ID value.
+     * By default, this validates an ObjectId and converts it to a BString, but you can override
+     * if your object's ID is not an ObjectId.
+     *
+     * (In the future, the default
+     * may be smart and look at the type of the _id field
+     * in the schema case class.)
+     */
+    protected def parseJValueIdFromPath(path : String) : JValue = {
         try {
-            new ObjectId(id)
-            id
+            new ObjectId(path)
         } catch {
-            case _ => throw new JsonValidationException("not a valid id: " + id)
+            case _ => throw new JsonValidationException("not a valid id: " + path)
         }
+        BString(path)
+    }
+
+    /**
+     * When creating an object, this function generates a new ID for it. By default,
+     * it creates a new ObjectId as a BString. Override this if your ID type is
+     * not ObjectId.
+     */
+    protected def generateJValueId() : JValue = {
+        BString(new ObjectId().toString)
     }
 
     /**
@@ -85,9 +105,11 @@ trait JsonMethods[SchemaType <: Product] {
      * By default this method forces the JValue to be a JObject and
      * adds an "_id" field if there wasn't one before. Also by default
      * if there's a path passed in, it's used for the _id and must match
-     * any existing _id.
+     * any existing _id. This method's default implementation invokes
+     * parseJValueIdFromPath() and generateJValueId(); usually you would
+     * override those to modify your ID type.
      *
-     * You could also "fix up" JSON (for example add default values for missing fields)
+     * In this method, you could also "fix up" JSON (for example add default values for missing fields)
      * before the JSON gets validated.
      *
      * This method is called for creating and for updating.
@@ -97,20 +119,20 @@ trait JsonMethods[SchemaType <: Product] {
             case jobject : JObject => {
                 if (jobject.contains("_id")) {
                     if (path.isDefined) {
-                        val idInObject = jobject.get("_id").get.unwrapped
-                        if (path.get != idInObject)
+                        val idInObject : JValue = jobject.get("_id").get
+                        if (parseJValueIdFromPath(path.get) != idInObject)
                             throw new JsonValidationException("Posted JSON containing _id %s to path %s".format(idInObject, path.get))
                     }
                     jobject
                 } else {
-                    val id = {
+                    val id : JValue = {
                         if (path.isDefined)
-                            verifiedObjectId(path.get)
+                            parseJValueIdFromPath(path.get)
                         else
-                            new ObjectId().toString
+                            generateJValueId()
                     }
 
-                    jobject + ("_id", BString(id))
+                    jobject + ("_id", id)
                 }
             }
             case _ => throw new JsonValidationException("JSON value must be an object i.e. enclosed in {}")

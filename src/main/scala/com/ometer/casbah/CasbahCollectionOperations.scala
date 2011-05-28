@@ -2,10 +2,11 @@ package com.ometer.casbah
 
 import com.ometer.mongo._
 import com.ometer.bson._
+import com.ometer.bson.Implicits._
 import com.mongodb.casbah.MongoCollection
 import org.bson.types.ObjectId
 
-abstract class CasbahCollectionOperations[EntityType <: Product : Manifest, CaseClassIdType, BObjectIdType]
+abstract class CasbahCollectionOperationsWithTransformedId[EntityType <: Product : Manifest, CaseClassIdType, BObjectIdType]
     extends CollectionOperations[EntityType, CaseClassIdType, BObjectIdType] {
 
     /** Implement this field in subclass to attach to a Casbah collection */
@@ -50,7 +51,20 @@ abstract class CasbahCollectionOperations[EntityType <: Product : Manifest, Case
     final override lazy val caseClassSyncDAO = daoGroup.caseClassSyncDAO
 }
 
-abstract class CasbahCollectionOperationsWithDefaultId[EntityType <: Product : Manifest]
-    extends CasbahCollectionOperations[EntityType, ObjectId, ObjectId] {
-    override protected val caseClassBObjectIdComposer = new IdentityIdComposer[ObjectId]
+/**
+ * Any IdType that can be treated as a BValue should work, though in the current implementation
+ * (which just passes the ID value directly to Casbah without actually creating a BValue)
+ * some cases might not actually work.
+ */
+abstract class CasbahCollectionOperations[EntityType <: Product : Manifest, IdType <% BValue]
+    extends CasbahCollectionOperationsWithTransformedId[EntityType, IdType, IdType] {
+    override protected val caseClassBObjectIdComposer = new IdentityIdComposer[IdType]
+}
+
+/**
+ * This is the most common case, where the ID is just an ObjectId.
+ */
+abstract class CasbahCollectionOperationsWithObjectId[EntityType <: Product : Manifest]
+    extends CasbahCollectionOperations[EntityType, ObjectId] {
+
 }

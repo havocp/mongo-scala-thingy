@@ -11,9 +11,21 @@ import play.test._
 package foo {
     case class Foo(_id : ObjectId, intField : Int, stringField : String)
 
-    object Foo extends CasbahCollectionOperationsWithDefaultId[Foo] {
+    object Foo extends CasbahCollectionOperationsWithObjectId[Foo] {
         override protected lazy val collection : MongoCollection = {
             MongoUtil.collection("foo")
+        }
+
+        def customQuery[E : Manifest]() = {
+            syncDAO[E].find(BObject("intField" -> 23))
+        }
+    }
+
+    case class FooWithIntId(_id : Int, intField : Int, stringField : String)
+
+    object FooWithIntId extends CasbahCollectionOperations[FooWithIntId, Int] {
+        override protected lazy val collection : MongoCollection = {
+            MongoUtil.collection("fooWithIntId")
         }
 
         def customQuery[E : Manifest]() = {
@@ -28,6 +40,7 @@ class DAOTest extends UnitTest {
     @org.junit.Before
     def setup() {
         MongoUtil.collection("foo").remove(MongoDBObject())
+        MongoUtil.collection("fooWithIntId").remove(MongoDBObject())
     }
 
     @Test
@@ -35,6 +48,15 @@ class DAOTest extends UnitTest {
         val foo = Foo(new ObjectId(), 23, "woohoo")
         Foo.caseClassSyncDAO.save(foo)
         val maybeFound = Foo.caseClassSyncDAO.findOneByID(foo._id)
+        assertTrue(maybeFound.isDefined)
+        assertEquals(foo, maybeFound.get)
+    }
+
+    @Test
+    def testSaveAndFindOneCaseClassWithIntId() {
+        val foo = FooWithIntId(89, 23, "woohoo")
+        FooWithIntId.caseClassSyncDAO.save(foo)
+        val maybeFound = FooWithIntId.caseClassSyncDAO.findOneByID(foo._id)
         assertTrue(maybeFound.isDefined)
         assertEquals(foo, maybeFound.get)
     }
