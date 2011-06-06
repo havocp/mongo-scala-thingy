@@ -1,3 +1,8 @@
+
+
+Note: In the process of renaming this to https://github.com/havocp/beaucatcher
+
+
 This is a library for working with MongoDB objects that incidentally
 does simple JSON stuff too. It hides Casbah's `DBObject` with an
 API that uses a BSON/JSON syntax tree with optional conversion to case
